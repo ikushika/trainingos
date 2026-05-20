@@ -946,16 +946,7 @@ function drTab(el,pid){
 }
 function closeDr(e){if(!e||e.target===document.getElementById('dr-overlay'))document.getElementById('dr-overlay').classList.remove('on');}
 // swipe to close
-let ty=0,tScrollTop=0;
-document.getElementById('drawer').addEventListener('touchstart',e=>{
-  ty=e.touches[0].clientY;
-  tScrollTop=document.getElementById('dr-body').scrollTop;
-},{passive:true});
-document.getElementById('drawer').addEventListener('touchmove',e=>{
-  const dy=e.touches[0].clientY-ty;
-  // スクロールが一番上にいる時だけスワイプ閉じを有効に、かつ150px以上
-  if(dy>150&&tScrollTop===0)closeDr();
-},{passive:true});
+// スワイプ閉じ無効 - ×ボタンのみで閉じる
 
 // ── EVAL ──────────────────────────────────────────
 function populateEvalStaff(){
