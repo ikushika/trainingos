@@ -315,6 +315,8 @@ button,input,select,textarea{font-family:var(--sans)}
       <button class="nitem" id="nav-register" onclick="showPage('register')"><i class="ti ti-user-plus"></i>研修生登録</button>
       <button class="nitem" id="nav-history" onclick="showPage('history')"><i class="ti ti-history"></i>メモ・履歴</button>
       <button class="nitem" id="nav-help" onclick="showPage('help')"><i class="ti ti-help-circle"></i>使い方</button>
+      <div class="sb-sec" style="margin-top:.5rem">データ</div>
+      <button class="nitem" id="nav-sync" onclick="syncNow()"><i class="ti ti-refresh"></i>スプシと再同期</button>
     </div>
     <div class="sb-footer">
       <div class="sb-theme" onclick="toggleTheme()" style="cursor:pointer;user-select:none">
@@ -694,6 +696,24 @@ function setAccent(hex){
   });
 }
 
+// ── SYNC ──────────────────────────────────────────────
+async function syncNow(){
+  if(!cur.key){return;}
+  closeSB();
+  const btn=document.getElementById('nav-sync');
+  if(btn){btn.style.opacity='0.5';btn.disabled=true;}
+  toast('スプシと同期中…');
+  try{
+    await loadFromSheets(cur.key);
+    populateEvalStaff();renderDashboard();initHistSelects();initRegChips();renderRegList();
+    toast('同期完了 ✓');
+  }catch(e){
+    toast('同期に失敗しました');
+  }finally{
+    if(btn){btn.style.opacity='1';btn.disabled=false;}
+  }
+}
+
 // ── FAQ ──────────────────────────────────────────────
 function toggleFaq(el){
   el.classList.toggle('open');
@@ -1020,16 +1040,35 @@ async function registerStaff(){
   if(!pos.length){toast('ポジションを選択してください');return;}
   const newId='ns'+nextSId++;
   const ns={id:newId,name,kana:document.getElementById('reg-kana').value.trim(),role:document.getElementById('reg-type').value,joinDate:document.getElementById('reg-date').value,positions:pos,color:COLORS[colorIdx++%COLORS.length]};
-  cur.store.staff.push(ns);STORES[cur.key].staff.push(ns);
-  if(!RATINGS[cur.key][newId])RATINGS[cur.key][newId]={};
+
+  // フォームリセット
   document.getElementById('reg-name').value='';document.getElementById('reg-kana').value='';
   document.getElementById('reg-date').value=today();
   document.querySelectorAll('#reg-chips input').forEach(i=>{i.checked=false;i.closest('.pchip').classList.remove('on');});
-  toast(`${name} を登録しました`);
-  renderRegList();initHistSelects();populateEvalStaff();renderDashboard();
+
+  // スプシに書き込み
   const res=await syncAddStaff(ns);
-  if(USE_GAS&&res.ok){if(res.id)ns.id=res.id;toast(`${name} → スプシに反映しました ✓`);}
-  else if(USE_GAS&&!res.ok)toast('⚠ スプシへの反映に失敗しました');
+  if(res.ok&&!res._demo&&res.id) ns.id=res.id;
+
+  toast(`${name} を登録しました`);
+
+  // スプシから再読み込みして重複防止・ダッシュボード即反映
+  if(USE_GAS){
+    try{
+      await loadFromSheets(cur.key);
+      toast(`${name} → スプシに反映しました ✓`);
+    }catch(e){
+      cur.store.staff.push(ns);
+      STORES[cur.key].staff.push(ns);
+      if(!RATINGS[cur.key][ns.id])RATINGS[cur.key][ns.id]={};
+    }
+  } else {
+    cur.store.staff.push(ns);
+    STORES[cur.key].staff.push(ns);
+    if(!RATINGS[cur.key][ns.id])RATINGS[cur.key][ns.id]={};
+  }
+
+  populateEvalStaff();renderDashboard();initHistSelects();initRegChips();renderRegList();
 }
 function renderRegList(){
   document.getElementById('reg-list').innerHTML=getS().map(s=>`
