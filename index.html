@@ -880,16 +880,22 @@ async function doTraineeLogin(){
   const btn = document.querySelector('#trainee-form .login-btn');
   if(btn){btn.textContent='確認中...';btn.disabled=true;}
 
-  // 毎回スプシから最新データを取得
+  // スプシから最新データ（スタッフ・評価・ポジション）を一括取得
   try{
     if(!STORES[key]) STORES[key]={name:key,trainers:[],staff:[]};
-    const res=await gasCall({action:'getAll',store:key});
-    if(res.ok){
-      if(res.staff&&res.staff.length){
-        STORES[key].staff=res.staff.map(s=>({...s,color:COLORS[Math.abs(hashStr(s.id||s.name))%COLORS.length]}));
+    const [allRes,posRes]=await Promise.all([
+      gasCall({action:'getAll',store:key}),
+      gasCall({action:'getPositions',store:key}),
+    ]);
+    if(allRes.ok){
+      if(allRes.staff&&allRes.staff.length){
+        STORES[key].staff=allRes.staff.map(s=>({...s,color:COLORS[Math.abs(hashStr(s.id||s.name))%COLORS.length]}));
       }
-      RATINGS[key]=res.ratings||{};
-      MEMOS[key]=res.memos||[];
+      RATINGS[key]=allRes.ratings||{};
+      MEMOS[key]=allRes.memos||[];
+    }
+    if(posRes.ok&&posRes.positions&&posRes.positions.length){
+      POSITIONS=posRes.positions;
     }
   }catch(e){
     if(btn){btn.textContent='ログイン';btn.disabled=false;}
