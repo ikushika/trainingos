@@ -299,7 +299,7 @@ button,input,select,textarea{font-family:var(--sans)}
 
     <!-- トレーナーログインフォーム -->
     <div id="trainer-form">
-      <div class="lfield"><label>ID</label><input type="text" id="l-id" placeholder="例: 加藤 雄大" autocomplete="name"></div>
+      <div class="lfield"><label>ID</label><input type="text" id="l-id"  autocomplete="name"></div>
       <div class="lfield"><label>パスワード</label><input type="password" id="l-pw" placeholder="••••••••" autocomplete="current-password"></div>
       <button class="login-btn" onclick="doLogin()">ログイン</button>
       <div class="login-err" id="login-err"><i class="ti ti-alert-circle"></i> IDまたはパスワードが正しくありません</div>
@@ -308,8 +308,8 @@ button,input,select,textarea{font-family:var(--sans)}
     <!-- トレーニーログインフォーム -->
     <div id="trainee-form" style="display:none">
       <div class="lfield"><label>ID（お名前）</label><input type="text" id="tl-name" placeholder="例: 山田 花子" autocomplete="name"></div>
-      <div class="lfield"><label>パスワード</label><input type="password" id="tl-pw" placeholder="初回は ikushika" autocomplete="current-password"></div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">初回パスワードは <strong>ikushika</strong> です</div>
+      <div class="lfield"><label>パスワード</label><input type="password" id="tl-pw" placeholder="初回は ikushika00" autocomplete="current-password"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">初回パスワードは <strong>ikushika00</strong> です</div>
       <button class="login-btn" onclick="doTraineeLogin()">ログイン</button>
       <div class="login-err" id="trainee-login-err" style="display:none"><i class="ti ti-alert-circle"></i> 名前またはパスワードが正しくありません</div>
     </div>
@@ -555,9 +555,9 @@ button,input,select,textarea{font-family:var(--sans)}
       <input type="text" id="trainee-id-input" placeholder="例: 山田 花子" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none" autocomplete="name">
     </div>
     <div class="field" style="margin-top:10px"><label>パスワード</label>
-      <input type="password" id="trainee-pw-input" placeholder="初回は ikushika" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none" autocomplete="current-password">
+      <input type="password" id="trainee-pw-input" placeholder="初回は ikushika00" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none" autocomplete="current-password">
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">初回パスワードは <strong>ikushika</strong> です</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">初回パスワードは <strong>ikushika00</strong> です</div>
     <button class="btn btn-p" onclick="loginTrainee()" style="width:100%"><i class="ti ti-login"></i>ログイン</button>
     <div id="trainee-err" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:8px">名前またはパスワードが正しくありません</div>
   </div>
@@ -904,14 +904,14 @@ async function doTraineeLogin(){
     normName(s.kana)===normName(name)
   );
   if(!staff){err.style.display='flex';return;}
-  const staffPw=String(staff.password||'ikushika').trim();
+  const staffPw=String(staff.password||'ikushika00').trim();
   const inputPw=pw.trim();
   if(inputPw!==staffPw){err.style.display='flex';return;}
   err.style.display='none';
   // 擬似的にcurをセット（トレーニービューに必要）
   cur={store:STORES[key],trainer:{name:''},key};
   // 初回（0000）ならPW設定へ
-  if(staffPw==='ikushika'){
+  if(staffPw==='ikushika00'){
     document.getElementById('login').style.display='none';
     showPwSetupFull(staff,key);
     return;
@@ -1078,12 +1078,12 @@ function loginTrainee(){
   );
   if(!staff){err.style.display='block';return;}
   // パスワードチェック
-  const staffPw=String(staff.password||'ikushika');
+  const staffPw=String(staff.password||'ikushika00');
   if(pw!==staffPw){err.style.display='block';return;}
   err.style.display='none';
   currentTrainee=staff;
   // 初回ログイン（PW=0000）ならPW設定画面へ
-  if(staffPw==='ikushika'){
+  if(staffPw==='ikushika00'){
     closeTraineeModal();
     showPwSetup(staff);
     return;
