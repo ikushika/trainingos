@@ -252,6 +252,12 @@ button,input,select,textarea{font-family:var(--sans)}
 .empty i{font-size:36px;display:block;margin-bottom:.5rem;opacity:.3}
 .empty p{font-size:13px}
 
+/* EVAL CORRECTION */
+.eval-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.eval-row:last-child{border-bottom:none}
+.eval-del-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0}
+.eval-del-btn:active{background:rgba(240,92,92,.12)}
+
 /* FAQ */
 .faq-item{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
 .faq-item:last-child{border-bottom:none}
@@ -279,7 +285,7 @@ button,input,select,textarea{font-family:var(--sans)}
         <option value="">読み込み中...</option>
       </select>
     </div>
-    <div class="lfield"><label>トレーナーID</label><input type="text" id="l-id" placeholder="例: ikushika" autocomplete="username"></div>
+    <div class="lfield"><label>お名前</label><input type="text" id="l-id" placeholder="例: 加藤 雄大" autocomplete="name"></div>
     <div class="lfield"><label>パスワード</label><input type="password" id="l-pw" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" onclick="doLogin()">ログイン</button>
     <div class="login-err" id="login-err"><i class="ti ti-alert-circle"></i> IDまたはパスワードが正しくありません</div>
@@ -317,6 +323,8 @@ button,input,select,textarea{font-family:var(--sans)}
       <button class="nitem" id="nav-help" onclick="showPage('help')"><i class="ti ti-help-circle"></i>使い方</button>
       <div class="sb-sec" style="margin-top:.5rem">データ</div>
       <button class="nitem" id="nav-sync" onclick="syncNow()"><i class="ti ti-refresh"></i>スプシと再同期</button>
+      <div class="sb-sec" style="margin-top:.5rem">その他</div>
+      <button class="nitem" id="nav-trainee" onclick="showTraineeLogin()"><i class="ti ti-user"></i>トレーニー画面</button>
     </div>
     <div class="sb-footer">
       <div class="sb-theme" onclick="toggleTheme()" style="cursor:pointer;user-select:none">
@@ -510,6 +518,38 @@ button,input,select,textarea{font-family:var(--sans)}
       <div id="hist-list"></div>
     </div>
   </div>
+</div>
+
+<!-- TRAINEE LOGIN MODAL -->
+<div id="trainee-modal" style="display:none;position:fixed;inset:0;z-index:300;background:var(--overlay);align-items:center;justify-content:center;padding:1.5rem">
+  <div class="login-inner-box" style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:340px;padding:1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div style="font-size:16px;font-weight:700">トレーニーログイン</div>
+      <button onclick="closeTraineeModal()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field"><label>お名前</label>
+      <input type="text" id="trainee-id-input" placeholder="例: 山田 花子" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none" autocomplete="name">
+    </div>
+    <div class="field" style="margin-top:10px"><label>パスワード</label>
+      <input type="password" id="trainee-pw-input" placeholder="初回は 0000" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none" autocomplete="current-password">
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">初回パスワードは <strong>0000</strong> です</div>
+    <button class="btn btn-p" onclick="loginTrainee()" style="width:100%"><i class="ti ti-login"></i>ログイン</button>
+    <div id="trainee-err" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:8px">名前またはパスワードが正しくありません</div>
+  </div>
+</div>
+
+<!-- TRAINEE VIEW -->
+<div id="trainee-view" style="display:none;position:fixed;inset:0;z-index:250;background:var(--bg);flex-direction:column;overflow:hidden">
+  <div style="height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1rem;gap:10px;flex-shrink:0">
+    <button onclick="closeTraineeView()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center"><i class="ti ti-arrow-left"></i></button>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700" id="tv-name">—</div>
+      <div style="font-size:10px;color:var(--text2)" id="tv-store">—</div>
+    </div>
+    <div style="font-size:11px;color:var(--accent);background:var(--accent-a);padding:3px 10px;border-radius:99px">トレーニー</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:1rem;padding-bottom:4rem" id="tv-body"></div>
 </div>
 
 <!-- DRAWER -->
@@ -738,7 +778,7 @@ async function doLogin(){
   let tr=null;
   if(USE_GAS){
     // スプシ認証
-    const res=await gasCall({action:'login',store:key,id,pw});
+    const res=await gasCall({action:'login',store:key,id,name:id,pw});
     if(!res.ok){
       err.style.display='flex';
       btn.textContent='ログイン';btn.disabled=false;
@@ -749,8 +789,8 @@ async function doLogin(){
     if(!STORES[key].trainers) STORES[key].trainers=[];
     if(!STORES[key].trainers.find(t=>t.id===tr.id)) STORES[key].trainers.push(tr);
   } else {
-    // デモモード：ローカル認証
-    tr=STORES[key].trainers.find(t=>t.id===id&&t.pw===pw);
+    // デモモード：ローカル認証（名前で検索）
+    tr=STORES[key].trainers.find(t=>t.name===id&&t.pw===pw);
     if(!tr){err.style.display='flex';btn.textContent='ログイン';btn.disabled=false;return;}
   }
 
@@ -781,6 +821,286 @@ async function doLogin(){
   }
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('trainee-modal').style.display==='flex')loginTrainee();});
+
+// ── EVAL CORRECTION ──────────────────────────────────
+function openEvalCorrectCurrent(staffId){
+  // 現在アクティブなタブのポジションIDを取得
+  const activeTab=document.querySelector('#dr-body .tab.on[data-pid]');
+  const pid=activeTab?activeTab.dataset.pid:null;
+  const s=getS().find(x=>x.id===staffId);
+  if(!pid&&s&&s.positions.length) return openEvalCorrect(staffId,s.positions[0]);
+  if(pid) openEvalCorrect(staffId,pid);
+}
+function openEvalCorrect(staffId,posId){
+  const s=getS().find(x=>x.id===staffId);
+  const pos=POSITIONS.find(p=>p.id===posId);
+  if(!s||!pos)return;
+  const r=(getR()[staffId]||{})[posId]||{};
+
+  let html=`<div style="margin-bottom:1rem">
+    <div style="font-size:14px;font-weight:700;margin-bottom:4px">${s.name} / ${pos.name}</div>
+    <div style="font-size:11px;color:var(--text2)">各スキルの直近評価を取り消し、または上書きできます</div>
+  </div>`;
+
+  pos.skills.forEach(sk=>{
+    const arr=r[sk.id]||[];
+    if(!arr.length){
+      html+=`<div class="eval-row"><span style="flex:1;font-size:13px;color:var(--text3)">${sk.name}</span><span style="font-size:11px;color:var(--text3)">未評価</span></div>`;
+      return;
+    }
+    const last=arr[arr.length-1];
+    const avgVal=avg(arr).toFixed(1);
+    html+=`<div class="eval-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${sk.name}</div>
+        <div style="font-size:11px;color:var(--text2)">平均★${avgVal}（${arr.length}回）/ 直近★${last}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select onchange="overwriteEval('${staffId}','${posId}','${sk.id}',this.value)" style="font-size:12px;padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);width:72px">
+          <option value="">上書き</option>
+          ${[1,2,3,4,5].map(v=>`<option value="${v}" ${v===last?'selected':''}>★${v}</option>`).join('')}
+        </select>
+        <button class="eval-del-btn" onclick="deleteLastEval('${staffId}','${posId}','${sk.id}')" title="直近を取り消し"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  });
+
+  // Show in drawer body
+  document.getElementById('dr-av').style.cssText=`background:${s.color}22;color:${s.color}`;
+  document.getElementById('dr-av').textContent=inits(s.name);
+  document.getElementById('dr-title').textContent=s.name+' — 評価修正';
+  document.getElementById('dr-sub').textContent=pos.name;
+  document.getElementById('dr-body').innerHTML=`<div>${html}</div>`;
+  document.getElementById('dr-overlay').classList.add('on');
+}
+
+function deleteLastEval(staffId,posId,skId){
+  const r=RATINGS[cur.key];
+  if(!r[staffId]||!r[staffId][posId]||!r[staffId][posId][skId])return;
+  const arr=r[staffId][posId][skId];
+  if(!arr.length)return;
+  arr.pop();
+  toast('直近の評価を取り消しました（スプシ再同期推奨）');
+  openEvalCorrect(staffId,posId);
+  renderDashboard();
+}
+
+function overwriteEval(staffId,posId,skId,val){
+  if(!val)return;
+  const r=RATINGS[cur.key];
+  if(!r[staffId])r[staffId]={};
+  if(!r[staffId][posId])r[staffId][posId]={};
+  if(!r[staffId][posId][skId])r[staffId][posId][skId]=[];
+  const arr=r[staffId][posId][skId];
+  if(arr.length>0) arr[arr.length-1]=parseInt(val);
+  else arr.push(parseInt(val));
+  toast('評価を上書きしました（スプシ再同期推奨）');
+  renderDashboard();
+}
+
+// ── TRAINEE VIEW ──────────────────────────────────────
+let currentTrainee=null;
+
+function showTraineeLogin(){
+  closeSB();
+  const modal=document.getElementById('trainee-modal');
+  modal.style.display='flex';
+  document.getElementById('trainee-id-input').value='';
+  document.getElementById('trainee-err').style.display='none';
+  document.getElementById('trainee-name-warn').style.display='none';
+}
+
+function closeTraineeModal(){
+  document.getElementById('trainee-modal').style.display='none';
+}
+
+function normName(s){
+  // スペース・ハイフン・全角スペースを除去して小文字化
+  return String(s).replace(/[\s　\-－ー]/g,'').toLowerCase();
+}
+function checkTraineeName(input){
+  const v=input.value;
+  const warn=document.getElementById('trainee-name-warn');
+  // スペース・ハイフンが含まれていたら警告
+  if(/[\s　\-－]/.test(v)){
+    warn.style.display='block';
+  } else {
+    warn.style.display='none';
+  }
+}
+function loginTrainee(){
+  const name=document.getElementById('trainee-id-input').value.trim();
+  const pw=document.getElementById('trainee-pw-input').value;
+  const err=document.getElementById('trainee-err');
+  if(!name||!pw){err.style.display='block';return;}
+  // 名前照合（スペース有無どちらでも可）
+  const inputNorm=normName(name);
+  const staff=getS().find(s=>
+    normName(s.name)===inputNorm ||
+    normName(s.kana)===inputNorm
+  );
+  if(!staff){err.style.display='block';return;}
+  // パスワードチェック
+  const staffPw=String(staff.password||'0000');
+  if(pw!==staffPw){err.style.display='block';return;}
+  err.style.display='none';
+  currentTrainee=staff;
+  // 初回ログイン（PW=0000）ならPW設定画面へ
+  if(staffPw==='0000'){
+    closeTraineeModal();
+    showPwSetup(staff);
+    return;
+  }
+  closeTraineeModal();
+  renderTraineeView(staff);
+  document.getElementById('trainee-view').style.display='flex';
+}
+
+function showPwSetup(staff){
+  const modal=document.getElementById('trainee-modal');
+  modal.style.display='flex';
+  modal.querySelector('.login-inner-box').innerHTML=`
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">パスワードを設定</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:1.25rem">初回ログインです。新しいパスワードを設定してください。</div>
+    <div class="field"><label>新しいパスワード</label>
+      <input type="password" id="new-pw-input" placeholder="4文字以上" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none">
+    </div>
+    <div class="field" style="margin-top:10px"><label>確認用（再入力）</label>
+      <input type="password" id="new-pw-confirm" placeholder="もう一度入力" style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);width:100%;padding:11px 13px;color:var(--text);font-size:14px;outline:none">
+    </div>
+    <div id="pw-setup-err" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-bottom:8px">パスワードが一致しません（4文字以上）</div>
+    <button class="btn btn-p" onclick="saveNewPassword('${staff.id}')" style="width:100%;margin-top:6px"><i class="ti ti-check"></i>設定して始める</button>
+  `;
+}
+
+async function saveNewPassword(staffId){
+  const pw1=document.getElementById('new-pw-input').value;
+  const pw2=document.getElementById('new-pw-confirm').value;
+  const err=document.getElementById('pw-setup-err');
+  if(!pw1||pw1.length<4||pw1!==pw2){err.style.display='block';return;}
+  err.style.display='none';
+  // ローカル更新
+  const staff=getS().find(s=>s.id===staffId);
+  if(staff) staff.password=pw1;
+  // スプシ更新
+  await gasCall({action:'updateTraineePassword',staffId,store:cur.key,name:staff?.name||'',newPassword:pw1});
+  toast('パスワードを設定しました！');
+  closeTraineeModal();
+  renderTraineeView(staff);
+  document.getElementById('trainee-view').style.display='flex';
+}
+
+function closeTraineeView(){
+  document.getElementById('trainee-view').style.display='none';
+  currentTrainee=null;
+}
+
+function renderTraineeView(s){
+  document.getElementById('tv-name').textContent=s.name;
+  document.getElementById('tv-store').textContent=cur.store.name;
+
+  const allAvgs=s.positions.map(pid=>posAvg(s.id,pid)).filter(a=>a>0);
+  const overallAvg=allAvgs.length?allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length:0;
+
+  // ポジション別達成率
+  let posHtml=s.positions.map(pid=>{
+    const pos=POSITIONS.find(p=>p.id===pid);
+    const pct=Math.round(posP(s.id,pid));
+    const a=posAvg(s.id,pid).toFixed(1);
+    const cnt=posEvalCount(s.id,pid);
+    const posColor=(pos&&pos.color)||'var(--blue)';
+    const barColor=pct>=GRAD_TH?'var(--accent)':posColor;
+    const col=pct>=GRAD_TH?'var(--accent)':pct>=50?posColor:'var(--text3)';
+    return `<div style="margin-bottom:.875rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:500">${pos?pos.name:pid}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--text3)">${cnt}回評価</span>
+          <span style="font-size:12px;font-family:var(--mono);color:${col};font-weight:600">★${a} (${pct}%)</span>
+        </div>
+      </div>
+      <div style="height:8px;background:var(--bg4);border-radius:99px;overflow:hidden;position:relative">
+        <div style="height:100%;border-radius:99px;background:${barColor};width:${pct}%;transition:width .5s"></div>
+        <div style="position:absolute;top:0;left:${GRAD_TH}%;width:2px;height:100%;background:var(--red)"></div>
+      </div>
+      <div style="font-size:10px;color:var(--red);text-align:right;margin-top:2px">卒業ライン ${GRAD_TH}%</div>
+    </div>`;
+  }).join('');
+
+  // 改善が必要なスキルTOP3
+  let lowSkills=[];
+  s.positions.forEach(pid=>{
+    const pos=POSITIONS.find(p=>p.id===pid);
+    if(!pos)return;
+    const r=(getR()[s.id]||{})[pid]||{};
+    pos.skills.forEach(sk=>{
+      const arr=r[sk.id]||[];
+      if(arr.length>0){
+        lowSkills.push({posName:pos.name,skName:sk.name,avg:avg(arr),cnt:arr.length});
+      }
+    });
+  });
+  lowSkills.sort((a,b)=>a.avg-b.avg);
+  const top3=lowSkills.slice(0,3);
+
+  let adviceHtml='';
+  if(top3.length){
+    adviceHtml=top3.map((sk,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:.75rem 0;border-bottom:1px solid var(--border)">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent-a);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${sk.skName}</div>
+          <div style="font-size:11px;color:var(--text2)">${sk.posName} / 平均★${sk.avg.toFixed(1)}（${sk.cnt}回）</div>
+        </div>
+      </div>`).join('');
+  } else {
+    adviceHtml=`<div class="empty"><i class="ti ti-trophy"></i><p>まだ評価がありません</p></div>`;
+  }
+
+  // 直近メモ
+  const memos=getM().filter(m=>m.staffId===s.id).sort((a,b)=>b.id-a.id).slice(0,3);
+  let memoHtml=memos.length?memos.map(m=>{
+    const pos=POSITIONS.find(p=>p.id===m.posId);
+    return `<div style="padding:.875rem 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:6px;margin-bottom:4px;font-size:10px;color:var(--text2)">
+        <span>${fmt(m.date)}</span><span>${m.trainer}</span>
+        <span style="color:${pos?pos.color:'inherit'}">${pos?pos.name:'—'}</span>
+      </div>
+      <div style="font-size:13px;line-height:1.65">${m.memo}</div>
+    </div>`;
+  }).join(''):`<div class="empty" style="padding:1.5rem 0"><p>まだメモはありません</p></div>`;
+
+  document.getElementById('tv-body').innerHTML=`
+    <!-- 総合 -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;border-radius:12px;background:${s.color}22;color:${s.color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">${inits(s.name)}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700">${s.name}</div>
+        <div style="font-size:11px;color:var(--text2)">${s.role} · ${fmt(s.joinDate)}入社</div>
+        ${overallAvg>0?`<div style="margin-top:4px;font-size:13px;color:var(--accent);font-family:var(--mono);font-weight:700">総合平均 ★${overallAvg.toFixed(2)}</div>`:''}
+      </div>
+    </div>
+
+    <!-- ポジション達成率 -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-head"><span class="card-title"><i class="ti ti-chart-bar" style="margin-right:6px"></i>ポジション別達成率</span></div>
+      <div class="card-body">${posHtml}</div>
+    </div>
+
+    <!-- 次に頑張るべきスキル -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-head"><span class="card-title"><i class="ti ti-target" style="margin-right:6px"></i>次に伸ばすべきスキル TOP3</span></div>
+      <div class="card-body" style="padding:0 1rem">${adviceHtml}</div>
+    </div>
+
+    <!-- トレーナーメモ -->
+    <div class="card">
+      <div class="card-head"><span class="card-title"><i class="ti ti-notes" style="margin-right:6px"></i>トレーナーからのメモ</span></div>
+      <div class="card-body" style="padding:0 1rem">${memoHtml}</div>
+    </div>
+  `;
+}
 
 // ── 起動時に店舗一覧を読み込む ──────────────────────────
 if(USE_GAS){ loadStores(); } 
@@ -887,9 +1207,11 @@ function openDr(staffId){
   av.textContent=inits(s.name);
   document.getElementById('dr-title').textContent=s.name;
   document.getElementById('dr-sub').textContent=`${s.role} · ${fmt(s.joinDate)}入社`;
-  let html=`<div class="tabs">`;
-  s.positions.forEach((pid,i)=>{const pos=POSITIONS.find(p=>p.id===pid);html+=`<button class="tab ${i===0?'on':''}" onclick="drTab(this,'dt-${pid}')">${pos.name}</button>`;});
-  html+=`<button class="tab" onclick="drTab(this,'dt-memos')"><i class="ti ti-notes"></i></button></div>`;
+  let html=`<div class="tabs" style="position:relative">`;
+  s.positions.forEach((pid,i)=>{const pos=POSITIONS.find(p=>p.id===pid);html+=`<button class="tab ${i===0?'on':''}" data-pid="${pid}" onclick="drTab(this,'dt-${pid}')">${pos?pos.name:pid}</button>`;});
+  html+=`<button class="tab" onclick="drTab(this,'dt-memos')"><i class="ti ti-notes"></i></button>
+  <button class="tab" onclick="openEvalCorrectCurrent('${staffId}')" style="margin-left:auto;color:var(--amber);flex-shrink:0" title="評価修正"><i class="ti ti-edit"></i> 修正</button>
+  </div>`;
   s.positions.forEach((pid,i)=>{
     const pos=POSITIONS.find(p=>p.id===pid);
     const r=(getR()[staffId]||{})[pid]||{};
