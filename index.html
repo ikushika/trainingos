@@ -1073,29 +1073,23 @@ function openEvalCorrect(staffId,posId){
 
   let html=`<div style="margin-bottom:1rem">
     <div style="font-size:14px;font-weight:700;margin-bottom:4px">${s.name} / ${pos.name}</div>
-    <div style="font-size:11px;color:var(--text2)">各スキルの直近評価を取り消し、または上書きできます</div>
+    <div style="font-size:11px;color:var(--text2)">★を選択すると補正評価として追加されます（回数は変わりません）</div>
   </div>`;
 
   pos.skills.forEach(sk=>{
     const arr=r[sk.id]||[];
-    if(!arr.length){
-      html+=`<div class="eval-row"><span style="flex:1;font-size:13px;color:var(--text3)">${sk.name}</span><span style="font-size:11px;color:var(--text3)">未評価</span></div>`;
-      return;
-    }
-    const last=arr[arr.length-1];
-    const avgVal=avg(arr).toFixed(1);
+    const avgVal=arr.length?avg(arr).toFixed(1):'—';
+    const last=arr.length?arr[arr.length-1]:'—';
     html+=`<div class="eval-row">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500">${sk.name}</div>
         <div style="font-size:11px;color:var(--text2)">平均★${avgVal}（${arr.length}回）/ 直近★${last}</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <select onchange="overwriteEval('${staffId}','${posId}','${sk.id}',this.value)" style="font-size:12px;padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);width:72px">
-          <option value="">上書き</option>
-          ${[1,2,3,4,5].map(v=>`<option value="${v}" ${v===last?'selected':''}>★${v}</option>`).join('')}
-        </select>
-        <button class="eval-del-btn" onclick="deleteLastEval('${staffId}','${posId}','${sk.id}')" title="直近を取り消し"><i class="ti ti-trash"></i></button>
-      </div>
+      <select onchange="addCorrectEval('${staffId}','${posId}','${sk.id}',this.value,this)"
+        style="font-size:12px;padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);width:72px">
+        <option value="">修正</option>
+        ${[1,2,3,4,5].map(v=>`<option value="${v}">★${v}</option>`).join('')}
+      </select>
     </div>`;
   });
 
@@ -1108,49 +1102,24 @@ function openEvalCorrect(staffId,posId){
   document.getElementById('dr-overlay').classList.add('on');
 }
 
-async function deleteLastEval(staffId,posId,skId){
-  const r=RATINGS[cur.key];
-  if(!r[staffId]||!r[staffId][posId]||!r[staffId][posId][skId])return;
-  const arr=r[staffId][posId][skId];
-  if(!arr.length)return;
-  // ローカル更新
-  arr.pop();
-  openEvalCorrect(staffId,posId);
-  renderDashboard();
-  // スプシ更新
-  const res=await gasCall({
-    action:'deleteLastRating',
-    store:cur.key,
-    staffId,posId,skId,
-    trainer:cur.trainer.name
-  });
-  if(res.ok&&!res._demo) toast('直近の評価を取り消しました ✓');
-  else if(res._demo) toast('直近の評価を取り消しました（デモ）');
-  else toast('⚠ スプシの更新に失敗しました');
-}
-
-async function overwriteEval(staffId,posId,skId,val){
+async function addCorrectEval(staffId,posId,skId,val,sel){
   if(!val)return;
+  const star=parseInt(val);
+  // ローカル更新
   const r=RATINGS[cur.key];
   if(!r[staffId])r[staffId]={};
   if(!r[staffId][posId])r[staffId][posId]={};
   if(!r[staffId][posId][skId])r[staffId][posId][skId]=[];
-  const arr=r[staffId][posId][skId];
-  // ローカル更新
-  if(arr.length>0) arr[arr.length-1]=parseInt(val);
-  else arr.push(parseInt(val));
+  r[staffId][posId][skId].push(star);
+  // スプシに追加書き込み（既存の評価APIを再利用）
+  const ratings={};ratings[skId]=star;
+  const res=await syncAddRating(staffId,posId,ratings,today());
+  if(res.ok&&!res._demo) toast(`${skId} を★${star}で補正しました ✓`);
+  else toast('⚠ スプシの書き込みに失敗しました');
+  // セレクトをリセット
+  if(sel)sel.value='';
+  openEvalCorrect(staffId,posId);
   renderDashboard();
-  // スプシ更新
-  const res=await gasCall({
-    action:'overwriteRating',
-    store:cur.key,
-    staffId,posId,skId,
-    newVal:val,
-    trainer:cur.trainer.name
-  });
-  if(res.ok&&!res._demo) toast('評価を上書きしました ✓');
-  else if(res._demo) toast('評価を上書きしました（デモ）');
-  else toast('⚠ スプシの更新に失敗しました');
 }
 
 // ── TRAINEE VIEW ──────────────────────────────────────
