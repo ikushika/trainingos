@@ -876,27 +876,37 @@ async function doTraineeLogin(){
   const pw   = document.getElementById('tl-pw').value;
   const err  = document.getElementById('trainee-login-err');
   if(!key||!name||!pw){err.style.display='flex';return;}
-  if(!STORES[key]){err.style.display='flex';return;}
-  // スプシからデータ読み込み済みか確認
-  if(!STORES[key].staff||!STORES[key].staff.length){
-    // ログインなしでスタッフデータだけ取得
-    try{
-      const res=await gasCall({action:'getAll',store:key});
-      if(res.ok){
-        if(!STORES[key])STORES[key]={name:key,trainers:[],staff:[]};
-        if(res.staff&&res.staff.length) STORES[key].staff=res.staff.map(s=>({...s,color:COLORS[Math.abs(hashStr(s.id||s.name))%COLORS.length]}));
-        RATINGS[key]=res.ratings||{};
-        MEMOS[key]=res.memos||[];
+
+  // ローディング表示
+  const btn = document.querySelector('#trainee-form .login-btn');
+  if(btn){btn.textContent='確認中...';btn.disabled=true;}
+
+  // 毎回スプシから最新データを取得
+  try{
+    if(!STORES[key]) STORES[key]={name:key,trainers:[],staff:[]};
+    const res=await gasCall({action:'getAll',store:key});
+    if(res.ok){
+      if(res.staff&&res.staff.length){
+        STORES[key].staff=res.staff.map(s=>({...s,color:COLORS[Math.abs(hashStr(s.id||s.name))%COLORS.length]}));
       }
-    }catch(e){err.style.display='flex';return;}
+      RATINGS[key]=res.ratings||{};
+      MEMOS[key]=res.memos||[];
+    }
+  }catch(e){
+    if(btn){btn.textContent='ログイン';btn.disabled=false;}
+    err.style.display='flex';return;
   }
+
+  if(btn){btn.textContent='ログイン';btn.disabled=false;}
+
   const staff=(STORES[key].staff||[]).find(s=>
     normName(s.name)===normName(name)||
     normName(s.kana)===normName(name)
   );
   if(!staff){err.style.display='flex';return;}
-  const staffPw=String(staff.password||'ikushika');
-  if(pw!==staffPw){err.style.display='flex';return;}
+  const staffPw=String(staff.password||'ikushika').trim();
+  const inputPw=pw.trim();
+  if(inputPw!==staffPw){err.style.display='flex';return;}
   err.style.display='none';
   // 擬似的にcurをセット（トレーニービューに必要）
   cur={store:STORES[key],trainer:{name:''},key};
