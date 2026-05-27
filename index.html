@@ -1108,28 +1108,49 @@ function openEvalCorrect(staffId,posId){
   document.getElementById('dr-overlay').classList.add('on');
 }
 
-function deleteLastEval(staffId,posId,skId){
+async function deleteLastEval(staffId,posId,skId){
   const r=RATINGS[cur.key];
   if(!r[staffId]||!r[staffId][posId]||!r[staffId][posId][skId])return;
   const arr=r[staffId][posId][skId];
   if(!arr.length)return;
+  // ローカル更新
   arr.pop();
-  toast('直近の評価を取り消しました（スプシ再同期推奨）');
   openEvalCorrect(staffId,posId);
   renderDashboard();
+  // スプシ更新
+  const res=await gasCall({
+    action:'deleteLastRating',
+    store:cur.key,
+    staffId,posId,skId,
+    trainer:cur.trainer.name
+  });
+  if(res.ok&&!res._demo) toast('直近の評価を取り消しました ✓');
+  else if(res._demo) toast('直近の評価を取り消しました（デモ）');
+  else toast('⚠ スプシの更新に失敗しました');
 }
 
-function overwriteEval(staffId,posId,skId,val){
+async function overwriteEval(staffId,posId,skId,val){
   if(!val)return;
   const r=RATINGS[cur.key];
   if(!r[staffId])r[staffId]={};
   if(!r[staffId][posId])r[staffId][posId]={};
   if(!r[staffId][posId][skId])r[staffId][posId][skId]=[];
   const arr=r[staffId][posId][skId];
+  // ローカル更新
   if(arr.length>0) arr[arr.length-1]=parseInt(val);
   else arr.push(parseInt(val));
-  toast('評価を上書きしました（スプシ再同期推奨）');
   renderDashboard();
+  // スプシ更新
+  const res=await gasCall({
+    action:'overwriteRating',
+    store:cur.key,
+    staffId,posId,skId,
+    newVal:val,
+    trainer:cur.trainer.name
+  });
+  if(res.ok&&!res._demo) toast('評価を上書きしました ✓');
+  else if(res._demo) toast('評価を上書きしました（デモ）');
+  else toast('⚠ スプシの更新に失敗しました');
 }
 
 // ── TRAINEE VIEW ──────────────────────────────────────
