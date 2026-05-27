@@ -347,8 +347,7 @@ button,input,select,textarea{font-family:var(--sans)}
       <button class="nitem" id="nav-help" onclick="showPage('help')"><i class="ti ti-help-circle"></i>使い方</button>
       <div class="sb-sec" style="margin-top:.5rem">データ</div>
       <button class="nitem" id="nav-sync" onclick="syncNow()"><i class="ti ti-refresh"></i>スプシと再同期</button>
-      <div class="sb-sec" style="margin-top:.5rem">その他</div>
-      <button class="nitem" id="nav-trainee" onclick="showTraineeLogin()"><i class="ti ti-user"></i>トレーニー画面</button>
+
     </div>
     <div class="sb-footer">
       <div class="sb-theme" onclick="toggleTheme()" style="cursor:pointer;user-select:none">
@@ -566,11 +565,51 @@ button,input,select,textarea{font-family:var(--sans)}
 <!-- TRAINEE VIEW -->
 <div id="trainee-view" style="display:none;position:fixed;inset:0;z-index:250;background:var(--bg);flex-direction:column;overflow:hidden">
   <div style="height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1rem;gap:10px;flex-shrink:0">
+    <button onclick="toggleTraineeSB()" style="width:38px;height:38px;border-radius:9px;border:none;background:none;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0"><i class="ti ti-menu-2"></i></button>
     <div style="flex:1">
       <div style="font-size:14px;font-weight:700" id="tv-name">—</div>
       <div style="font-size:10px;color:var(--text2)" id="tv-store">—</div>
     </div>
     <div style="font-size:11px;color:var(--accent);background:var(--accent-a);padding:3px 10px;border-radius:99px">トレーニー</div>
+  </div>
+  <!-- トレーニー用サイドバー -->
+  <div id="tv-sb-overlay" onclick="closeTraineeSB()" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300"></div>
+  <div id="tv-sidebar" style="position:fixed;left:0;top:0;bottom:0;width:260px;background:var(--bg2);border-right:1px solid var(--border);z-index:301;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .24s cubic-bezier(.4,0,.2,1)">
+    <div style="padding:.875rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:14px;font-weight:700">メニュー</div>
+      <button onclick="closeTraineeSB()" style="width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="flex:1;padding:.75rem">
+      <!-- テーマ切り替え -->
+      <div onclick="toggleTheme();closeTraineeSB()" style="display:flex;align-items:center;gap:10px;padding:.75rem;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border);margin-bottom:8px;cursor:pointer">
+        <i class="ti ti-sun" style="font-size:16px;color:var(--text2)" id="tv-theme-icon"></i>
+        <span style="font-size:13px;flex:1" id="tv-theme-lbl">ダークモード</span>
+        <div style="width:36px;height:20px;border-radius:99px;background:var(--accent);position:relative;flex-shrink:0" id="tv-theme-track">
+          <div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;right:3px;transition:transform .18s" id="tv-theme-thumb"></div>
+        </div>
+      </div>
+      <!-- メインカラー -->
+      <div style="margin-bottom:8px;padding:.75rem;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;letter-spacing:.05em">メインカラー</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div onclick="setAccent('#b8f040')" style="width:26px;height:26px;border-radius:50%;background:#b8f040;cursor:pointer;border:2px solid transparent"></div>
+          <div onclick="setAccent('#4da6ff')" style="width:26px;height:26px;border-radius:50%;background:#4da6ff;cursor:pointer;border:2px solid transparent"></div>
+          <div onclick="setAccent('#ff6b6b')" style="width:26px;height:26px;border-radius:50%;background:#ff6b6b;cursor:pointer;border:2px solid transparent"></div>
+          <div onclick="setAccent('#a78bfa')" style="width:26px;height:26px;border-radius:50%;background:#a78bfa;cursor:pointer;border:2px solid transparent"></div>
+          <div onclick="setAccent('#ffb347')" style="width:26px;height:26px;border-radius:50%;background:#ffb347;cursor:pointer;border:2px solid transparent"></div>
+          <div onclick="setAccent('#4dcc88')" style="width:26px;height:26px;border-radius:50%;background:#4dcc88;cursor:pointer;border:2px solid transparent"></div>
+        </div>
+      </div>
+      <!-- スプシと再同期 -->
+      <button onclick="syncTrainee()" style="width:100%;padding:10px;border-radius:var(--r);border:1px solid var(--border);background:none;color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-bottom:8px">
+        <i class="ti ti-refresh"></i>データを再読み込み
+      </button>
+    </div>
+    <div style="padding:.75rem;border-top:1px solid var(--border)">
+      <button onclick="traineeLogout()" style="width:100%;padding:10px;border-radius:var(--r);border:1px solid var(--border);background:none;color:var(--red);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+        <i class="ti ti-logout"></i>ログアウト
+      </button>
+    </div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:1rem;padding-bottom:4rem" id="tv-body"></div>
 </div>
@@ -728,6 +767,9 @@ function toggleTheme(){
   document.getElementById('theme-btn').innerHTML=`<i class="ti ti-${dark?'sun':'moon'}"></i>`;
   const chk=document.getElementById('theme-chk');
   if(chk) chk.checked=dark;
+  // トレーニーサイドバーのテーマ表示も更新
+  const tvLbl=document.getElementById('tv-theme-lbl');
+  if(tvLbl) tvLbl.textContent=dark?'ダークモード':'ライトモード';
 }
 
 // ── ACCENT COLOR ──────────────────────────────────
@@ -757,6 +799,56 @@ function setAccent(hex){
   document.querySelectorAll('.login-btn,.btn-p').forEach(btn=>{
     btn.style.color = textOnAccent;
   });
+}
+
+// ── TRAINEE SIDEBAR ──────────────────────────────────
+function toggleTraineeSB(){
+  const sb=document.getElementById('tv-sidebar');
+  const ov=document.getElementById('tv-sb-overlay');
+  const isOpen=sb.style.transform==='translateX(0px)'||sb.style.transform==='translateX(0)';
+  sb.style.transform=isOpen?'translateX(-100%)':'translateX(0)';
+  ov.style.display=isOpen?'none':'block';
+}
+function closeTraineeSB(){
+  document.getElementById('tv-sidebar').style.transform='translateX(-100%)';
+  document.getElementById('tv-sb-overlay').style.display='none';
+}
+async function syncTrainee(){
+  if(!cur.key||!currentTrainee)return;
+  closeTraineeSB();
+  toast('データを再読み込み中…');
+  try{
+    const [allRes,posRes]=await Promise.all([
+      gasCall({action:'getAll',store:cur.key}),
+      gasCall({action:'getPositions',store:cur.key}),
+    ]);
+    if(allRes.ok){
+      if(allRes.staff&&allRes.staff.length){
+        STORES[cur.key].staff=allRes.staff.map(s=>({...s,color:COLORS[Math.abs(hashStr(s.id||s.name))%COLORS.length]}));
+      }
+      RATINGS[cur.key]=allRes.ratings||{};
+      MEMOS[cur.key]=allRes.memos||[];
+    }
+    if(posRes.ok&&posRes.positions&&posRes.positions.length) POSITIONS=posRes.positions;
+    // 最新のスタッフデータで再描画
+    const updated=(STORES[cur.key].staff||[]).find(s=>s.id===currentTrainee.id);
+    if(updated){currentTrainee=updated;renderTraineeView(updated);}
+    toast('再読み込み完了 ✓');
+  }catch(e){
+    toast('再読み込みに失敗しました');
+  }
+}
+function traineeLogout(){
+  closeTraineeSB();
+  document.getElementById('trainee-view').style.display='none';
+  currentTrainee=null;
+  // ログイン画面に戻る
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('login').style.display='flex';
+  switchRole('trainee');
+  // フォームリセット
+  document.getElementById('tl-name').value='';
+  document.getElementById('tl-pw').value='';
 }
 
 // ── SYNC ──────────────────────────────────────────────
